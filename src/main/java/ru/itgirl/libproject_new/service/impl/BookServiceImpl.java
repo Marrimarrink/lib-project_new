@@ -23,6 +23,8 @@ import ru.itgirl.libproject_new.service.BookService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,10 +34,25 @@ public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
     private final GenreRepository genreRepository;
     //private final AuthorRepository authorRepository;
+/*    //Метод без логирования
     @Override
     public BookDto getByNameV1(String name) {
         Book book = bookRepository.findBookByName(name).orElseThrow();
         return convertEntityToDto(book);
+    }*/
+
+    @Override
+    public BookDto getByNameV1(String name) {
+        log.info("Try to find author by name {}", name);
+        Optional<Book> book = bookRepository.findBookByName(name);
+        if (book.isPresent()) {
+            BookDto bookDto = convertEntityToDto(book.get());
+            log.info("Book: {}", bookDto.toString());
+            return bookDto;
+        } else {
+            log.error("Book with name {} not found", name);
+            throw new NoSuchElementException("No value present");
+        }
     }
 
     @Override
