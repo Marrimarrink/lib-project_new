@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd">
+
+    <changeSet id="create_tables" author="author_name" context="schema">
+        <comment>Create initial database tables</comment>
+
+        <createTable tableName="author">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="surname" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="genre">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="book">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="genre_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="author_book">
+            <column name="book_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="author_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="book"
+                baseColumnNames="genre_id"
+                referencedTableName="genre"
+                referencedColumnNames="id"
+                constraintName="fk_book_genre"/>
+
+        <addForeignKeyConstraint
+                baseTableName="author_book"
+                baseColumnNames="book_id"
+                referencedTableName="book"
+                referencedColumnNames="id"
+                constraintName="fk_author_book_book"/>
+
+        <addForeignKeyConstraint
+                baseTableName="author_book"
+                baseColumnNames="author_id"
+                referencedTableName="author"
+                referencedColumnNames="id"
+                constraintName="fk_author_book_author"/>
+    </changeSet>
+
+    <changeSet id="seed_initial_data" author="author_name" context="test,dev">
+        <comment>Insert initial test data</comment>
+
+
+        <insert tableName="author">
+            <column name="name" value="Александр"/>
+            <column name="surname" value="Пушкин"/>
+        </insert>
+        <insert tableName="author">
+            <column name="name" value="Николай"/>
+            <column name="surname" value="Гоголь"/>
+        </insert>
+        <insert tableName="author">
+            <column name="name" value="Лев"/>
+            <column name="surname" value="Толстой"/>
+        </insert>
+        <insert tableName="author">
+            <column name="name" value="Михаил"/>
+            <column name="surname" value="Булгаков"/>
+        </insert>
+        <insert tableName="author">
+            <column name="name" value="Федор"/>
+            <column name="surname" value="Достоевский"/>
+        </insert>
+
+        <insert tableName="genre">
+            <column name="name" value="Рассказ"/>
+        </insert>
+        <insert tableName="genre">
+            <column name="name" value="Роман"/>
+        </insert>
+        <insert tableName="genre">
+            <column name="name" value="Комедия"/>
+        </insert>
+        <insert tableName="genre">
+            <column name="name" value="Драма"/>
+        </insert>
+
+        <insert tableName="book">
+            <column name="name" value="Война и мир"/>
+            <column name="genre_id" valueNumeric="2"/>
+        </insert>
+        <insert tableName="book">
+            <column name="name" value="Преступление и наказание"/>
+            <column name="genre_id" valueNumeric="2"/>
+        </insert>
+        <insert tableName="book">
+            <column name="name" value="Нос"/>
+            <column name="genre_id" valueNumeric="1"/>
+        </insert>
+        <insert tableName="book">
+            <column name="name" value="Мастер и Маргарита"/>
+            <column name="genre_id" valueNumeric="2"/>
+        </insert>
+
+        <insert tableName="author_book">
+            <column name="book_id" valueNumeric="1"/>
+            <column name="author_id" valueNumeric="3"/>
+        </insert>
+        <insert tableName="author_book">
+            <column name="book_id" valueNumeric="2"/>
+            <column name="author_id" valueNumeric="5"/>
+        </insert>
+        <insert tableName="author_book">
+            <column name="book_id" valueNumeric="3"/>
+            <column name="author_id" valueNumeric="2"/>
+        </insert>
+        <insert tableName="author_book">
+            <column name="book_id" valueNumeric="4"/>
+            <column name="author_id" valueNumeric="4"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>
