@@ -57,8 +57,16 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public BookDto getByNameV2(String name) {
-        Book book = bookRepository.findBookByNameBySql(name).orElseThrow();
-        return convertEntityToDto(book);
+        log.info("Try to find book by name {}", name);
+        Optional<Book> book = bookRepository.findBookByNameBySql(name);
+        if (book.isPresent()) {
+            BookDto bookDto = convertEntityToDto(book.get());
+            log.info("Book: {}", bookDto.toString());
+            return bookDto;
+        }else {
+            log.error("Book with name {} not found", name);
+            throw new NoSuchElementException("No value present");
+        }
     }
 
     @Override
@@ -71,70 +79,64 @@ public class BookServiceImpl implements BookService {
                 return cb.equal(root.get("name"), name);
             }
         });
-
-        Book book = bookRepository.findOne(specification).orElseThrow();
-        return convertEntityToDto(book);
+        log.info("Try to find book by name {}", name);
+        Optional<Book> book = bookRepository.findOne(specification);
+        if (book.isPresent()) {
+            BookDto bookDto = convertEntityToDto(book.get());
+            log.info("Book: {}", bookDto.toString());
+            return bookDto;
+        } else {
+            log.error("Book with name {} not found", name);
+            throw new NoSuchElementException("No value present");
+        }
     }
 
-    //старый метод convertEntityToDto до появления метода на create book
-
-/*    private BookDto convertEntityToDto(Book book) {
-        return BookDto.builder()
-                .id(book.getId())
-                .genre(book.getGenre().getName())
-                .name(book.getName())
-                .build();
+//ошибка  в методе
+/*    @Override
+    public BookDto createBook(BookCreateDto bookCreateDto) {
+        log.info("Try to create book: {}", bookCreateDto);
+        if (bookRepository.existsByNameAndGenre(
+                bookCreateDto.getName(),
+                bookCreateDto.getGenreId())) {
+            log.warn("Book {} {} already exists",
+                    bookCreateDto.getName(),
+                    bookCreateDto.getGenreId());
+        }
+        try {
+            Book book = convertDtoToEntity(bookCreateDto);
+            Book savedBook = bookRepository.save(book);
+            log.info("Book saved with Id: {}", savedBook.getId());
+            BookDto bookDto = convertEntityToDto(savedBook);
+            log.info("Book created: {}", bookDto);
+            return bookDto;
+        } catch (Exception e) {
+            log.error("Error creating book: {}", e.getMessage());
+            throw new NoSuchElementException("Failed to create book", e);
+        }
     }*/
 
     @Override
     public BookDto createBook(BookCreateDto bookCreateDto) {
-        Book book  = bookRepository.save(convertDtoToEntity(bookCreateDto));
-        BookDto bookDto = convertEntityToDto(book);
-        return bookDto;
-    }
+        log.info("Try to create book: {}", bookCreateDto);
 
-    private Book convertDtoToEntity(BookCreateDto bookCreateDto) {
-        //бага  "genre": "ru.itgirl.libproject_new.model.Genre@525e1f2f",
-        /*Genre genre = new Genre();
-        genre.setId(bookCreateDto.getGenreId());*/
-        //фикс баги:
-        Genre genre = genreRepository.findById(bookCreateDto.getGenreId())
-                .orElseThrow(() -> new IllegalArgumentException("Такого жанра нет в базе данных"));
-
-        return Book.builder()
-                .name(bookCreateDto.getName())
-                .genre(genre) //проблема исправлена
-                .build();
-    }
-
-    private BookDto convertEntityToDto(Book book) {
-
-        String genreName = "Неизвестно";
-        if (book.getGenre() != null) {
-            genreName = book.getGenre().getName();
+        if (bookRepository.existsByNameAndGenre_Id(
+                bookCreateDto.getName(),
+                bookCreateDto.getGenreId())) {
+            log.error("Book {} в жанре {} уже существует",
+                    bookCreateDto.getName(),
+                    bookCreateDto.getGenreId());
         }
-
-
-        List<AuthorDto> authors = new ArrayList<>();
-        if (book.getAuthors() != null) {
-            for (Author author : book.getAuthors()) {
-                authors.add(
-                        AuthorDto.builder()
-                                .id(author.getId())
-                                .name(author.getName())
-                                .surname(author.getSurname())
-                                .build()
-                );
-            }
+        try {
+            Book book = convertDtoToEntity(bookCreateDto);
+            Book savedBook = bookRepository.save(book);
+            log.info("Book saved with Id: {}", savedBook.getId());
+            return convertEntityToDto(savedBook);
+        } catch (Exception e) {
+            log.error("Error creating book: {}", e.getMessage());
+            throw new RuntimeException("Failed to create book", e); // Более информативно
         }
-
-        return BookDto.builder()
-                .id(book.getId())
-                .name(book.getName())
-                .genre(genreName)
-                .authors(authors)
-                .build();
     }
+
 
 /*    @Override
     public BookDto updateBook(BookUpdateDto bookUpdateDto) {
@@ -148,20 +150,93 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public BookDto updateBook(BookUpdateDto bookUpdateDto) {
+        log.info("Try to update book: {}", bookUpdateDto);
         Book book = bookRepository.findById(bookUpdateDto.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+                .orElseThrow(() -> {
+                    log.error("Book with ID {} not found", bookUpdateDto.getId());
+                    return new NoSuchElementException("Book with ID " + bookUpdateDto.getId() + " not found");
+                });
         book.setName(bookUpdateDto.getName());
         Genre genre = genreRepository.findById(bookUpdateDto.getGenreId())
-                .orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+                .orElseThrow(() -> {
+                    log.error("Genre with ID {} not found", bookUpdateDto.getId());
+                    return new NoSuchElementException("Genre with ID " + bookUpdateDto.getId() + " not found");
+                });
         book.setGenre(genre);
         Book savedBook = bookRepository.save(book);
-        return convertEntityToDto(savedBook);
+        BookDto bookDto = convertEntityToDto(savedBook);
+        log.info("Book updated: {}", bookDto);
+        return bookDto;
     }
 
     @Override
     public void deleteBook(Long id) {
-        bookRepository.deleteById(id);
+        log.info("Try to find book by id {} for deleting", id);
+        Optional<Book> book = bookRepository.findById(id);
+        if (book.isPresent()) {
+            bookRepository.deleteById(id);
+            log.info("Book deleted: {}", id);
+        } else {
+            log.error("Book with id {} not found", id);
+            throw new NoSuchElementException("No value present");
+        }
     }
+
+
+
+//старый метод convertEntityToDto до появления метода на create book
+
+/*    private BookDto convertEntityToDto(Book book) {
+        return BookDto.builder()
+                .id(book.getId())
+                .genre(book.getGenre().getName())
+                .name(book.getName())
+                .build();
+    }*/
+
+
+private Book convertDtoToEntity(BookCreateDto bookCreateDto) {
+    //бага  "genre": "ru.itgirl.libproject_new.model.Genre@525e1f2f",
+        /*Genre genre = new Genre();
+        genre.setId(bookCreateDto.getGenreId());*/
+    //фикс баги:
+    Genre genre = genreRepository.findById(bookCreateDto.getGenreId())
+            .orElseThrow(() -> new IllegalArgumentException("Такого жанра нет в базе данных"));
+
+    return Book.builder()
+            .name(bookCreateDto.getName())
+            .genre(genre) //проблема исправлена
+            .build();
+}
+
+private BookDto convertEntityToDto(Book book) {
+
+    String genreName = "Неизвестно";
+    if (book.getGenre() != null) {
+        genreName = book.getGenre().getName();
+    }
+
+
+    List<AuthorDto> authors = new ArrayList<>();
+    if (book.getAuthors() != null) {
+        for (Author author : book.getAuthors()) {
+            authors.add(
+                    AuthorDto.builder()
+                            .id(author.getId())
+                            .name(author.getName())
+                            .surname(author.getSurname())
+                            .build()
+            );
+        }
+    }
+
+    return BookDto.builder()
+            .id(book.getId())
+            .name(book.getName())
+            .genre(genreName)
+            .authors(authors)
+            .build();
+}
 
 
 }
